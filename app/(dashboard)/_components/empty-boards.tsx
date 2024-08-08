@@ -1,10 +1,30 @@
 "use client";
 
 import Image from "next/image";
+import { useOrganization } from "@clerk/nextjs";
 
+import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
+import { useApiMutation } from "@/hooks/use-api-mutaion";
+import { toast } from "sonner";
 
 const EmptyBoards = () => {
+  const { organization } = useOrganization();
+  const { mutate, pending } = useApiMutation(api.board.create);
+
+  const onClick = () => {
+    if (!organization) return;
+
+    mutate({
+      title: "Untitled",
+      orgId: organization.id,
+    })
+      .then((id) => {
+        toast.success("Board created");
+      })
+      .catch(() => toast.error("Failed to create board!"));
+  };
+
   return (
     <div className="flex h-full flex-col items-center justify-center">
       <Image src="/note.svg" alt="Empty" height={110} width={110} />
@@ -13,7 +33,9 @@ const EmptyBoards = () => {
         Start by creating a board for your organization
       </p>
       <div className="mt-6">
-        <Button size="lg">Create Board</Button>
+        <Button disabled={pending} onClick={onClick} size="lg">
+          Create Board
+        </Button>
       </div>
     </div>
   );
