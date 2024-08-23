@@ -13,7 +13,7 @@ const Participants = () => {
   const hasMoreUsers = users.length > MAX_SHOWN_USERS;
   return (
     <div className="absolute right-2 top-2 flex h-12 items-center rounded-md bg-white p-3 shadow-md">
-      <div className="gap-x2 flex">
+      <div className="flex gap-x-2">
         {users.slice(0, MAX_SHOWN_USERS).map(({ connectionId, info }) => {
           return (
             <UserAvatar
