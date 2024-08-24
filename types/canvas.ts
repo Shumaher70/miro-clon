@@ -112,3 +112,10 @@ export enum Side {
   Right = 8,
   Bottom = 2,
 }
+
+export type Layer =
+  | RectangleLayer
+  | EllipseLayer
+  | PathLayer
+  | TextLayer
+  | NoteLayer;
