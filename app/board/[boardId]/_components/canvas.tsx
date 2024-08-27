@@ -2,7 +2,7 @@
 
 import { nanoid } from "nanoid";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { LiveObject } from "@liveblocks/client";
 import {
@@ -11,6 +11,7 @@ import {
   useCanRedo,
   useStorage,
   useMutation,
+  useOthersMapped,
 } from "@liveblocks/react/suspense";
 
 import {
@@ -27,7 +28,7 @@ import Toolbar from "./toolbar";
 import Participants from "./participants";
 import LayerPreview from "./layer-preview";
 import CursorsPresence from "./cursors-presence";
-import { pinterEventToCanvasPoint } from "@/lib/utils";
+import { connectionIdToColor, pointerEventToCanvasPoint } from "@/lib/utils";
 
 const MAX_LAYERS = 100;
 
@@ -99,7 +100,7 @@ const Canvas = ({ boardId }: CanvasProps) => {
     ({ setMyPresence }, e: React.PointerEvent) => {
       e.preventDefault();
 
-      const current = pinterEventToCanvasPoint(camera, e);
+      const current = pointerEventToCanvasPoint(camera, e);
 
       setMyPresence({ cursor: current });
     },
@@ -112,7 +113,7 @@ const Canvas = ({ boardId }: CanvasProps) => {
 
   const onPointerUp = useMutation(
     ({}, e) => {
-      const point = pinterEventToCanvasPoint(camera, e);
+      const point = pointerEventToCanvasPoint(camera, e);
 
       if (canvasState.mode === CanvasMode.Inserting) {
         insertLayer(canvasState.layerType, point);
@@ -126,6 +127,43 @@ const Canvas = ({ boardId }: CanvasProps) => {
     },
     [camera, history, canvasState, insertLayer],
   );
+
+  const selections = useOthersMapped((other) => other.presence.selection);
+
+  const onLayerPointerDown = useMutation(
+    ({ self, setMyPresence }, e: React.PointerEvent, layerId: string) => {
+      if (
+        canvasState.mode === CanvasMode.Pencil ||
+        canvasState.mode === CanvasMode.Inserting
+      ) {
+        return;
+      }
+
+      history.pause();
+      e.stopPropagation();
+
+      const point = pointerEventToCanvasPoint(camera, e);
+
+      if (!self.presence.selection.includes(layerId)) {
+        setMyPresence({ selection: [layerId] }, { addToHistory: true });
+      }
+      setCanvasState({ mode: CanvasMode.Translating, current: point });
+    },
+    [camera, history, setCanvasState, canvasState.mode],
+  );
+
+  const layerIdsToColorSelection = useMemo(() => {
+    const layerIdsToColorSelection: Record<string, string> = {};
+
+    for (const user of selections) {
+      const [connectionId, selection] = user;
+
+      for (const layerId of selection) {
+        layerIdsToColorSelection[layerId] = connectionIdToColor(connectionId);
+      }
+    }
+    return layerIdsToColorSelection;
+  }, [selections]);
 
   return (
     <main className="relative h-full w-full touch-none bg-neutral-100">
@@ -151,8 +189,8 @@ const Canvas = ({ boardId }: CanvasProps) => {
             <LayerPreview
               key={layerId}
               id={layerId}
-              onLayerPointerDown={() => {}}
-              selectionColor="#000"
+              selectionColor={layerIdsToColorSelection[layerId]}
+              onLayerPointerDown={onLayerPointerDown}
             />
           ))}
           <CursorsPresence />
