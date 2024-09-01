@@ -30,6 +30,7 @@ import Toolbar from "./toolbar";
 import Participants from "./participants";
 import LayerPreview from "./layer-preview";
 import SelectionBox from "./selection-box";
+import SelectionTools from "./selection-tools";
 import CursorsPresence from "./cursors-presence";
 import {
   connectionIdToColor,
@@ -282,6 +283,7 @@ const Canvas = ({ boardId }: CanvasProps) => {
         canvasState={canvasState}
         setCanvasState={setCanvasState}
       />
+      <SelectionTools camera={camera} setLastUsedColor={setLastUsedColor} />
       <svg
         onWheel={onWheel}
         onPointerUp={onPointerUp}
